@@ -1,11 +1,13 @@
+version: "3.8"
+
 services:
   reverse:
     container_name: reverse_proxy
     hostname: reverse_proxy
     image: nginx:latest
     ports:
-      - 80:80
-      - 443:443
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx:/etc/nginx
       - ./ssl:/etc/ssl/private
@@ -18,16 +20,21 @@ services:
     hostname: prometheus
     image: prom/prometheus:latest
     ports:
-      - 9090:9090
+      - "9090:9090"
     volumes:
       - ./prometheus:/etc/prometheus
     restart: unless-stopped
-    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+    command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
     depends_on:
       node-exporter:
         condition: service_started
       docker-exporter:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   node-exporter:
     container_name: node-exporter
@@ -43,7 +50,7 @@ services:
       - --collector.filesystem.ignored-mount-points
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     ports:
-      - 9100:9100
+      - "9100:9100"
     restart: unless-stopped
 
   docker-exporter:
@@ -53,15 +60,15 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - 9417:9417
-    restart: always
+      - "9417:9417"
+    restart: unless-stopped
 
   grafana:
     container_name: grafana
     hostname: grafana
     image: grafana/grafana:latest
     ports:
-      - 3000:3000
+      - "3000:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
     restart: unless-stopped
@@ -82,17 +89,17 @@ services:
     restart: always
 
   letsencrypt:
-    image: linuxserver/letsencrypt
     container_name: letsencrypt
+    image: linuxserver/swag # Substituído de linuxserver/letsencrypt para linuxserver/swag
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Sao_Paulo
-      - URL=example.com
+      - URL=sallesarchcloud.com.br
       - SUBDOMAINS=wildcard
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare
-      - EMAIL=email@example.com
+      - EMAIL=email@sallesarchcloud.com.br
       - DHLEVEL=4096
     volumes:
       - ./letsencrypt:/config
